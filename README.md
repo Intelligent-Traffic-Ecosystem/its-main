@@ -40,8 +40,27 @@ docker compose ps
 
 ### Update submodules to latest
 
+Submodules pin to a specific commit. After pushing new changes to a sub-repo, update the reference here:
+
 ```bash
+# Pull latest commits for all submodules
 git submodule update --remote --merge
+
+# Stage, commit, and push the updated references
+git add services/
+git commit -m "Update submodules to latest"
+git push
+```
+
+To update a single submodule (e.g. B2 only):
+
+```bash
+cd services/b2-data
+git pull origin main
+cd ../..
+git add services/b2-data
+git commit -m "Update B2 submodule to latest"
+git push
 ```
 
 ## Environment Variables
