@@ -11,26 +11,6 @@ AI-powered traffic monitoring system using video analytics and real-time congest
 | B3 | [its-dashboard-ui](https://github.com/Intelligent-Traffic-Ecosystem/its-dashboard-ui) | Traffic dashboard & visualization |
 | B4 | [its-infrastructure-ops](https://github.com/Intelligent-Traffic-Ecosystem/its-infrastructure-ops) | Platform, security & orchestration |
 
-## Architecture
-
-```
-┌──────────┐    ┌──────────┐    ┌─────────────┐    ┌────────────┐    ┌──────────┐
-│ Cameras  │───▶│ B1 Edge  │───▶│   Kafka     │───▶│ B2 Stream  │───▶│ Postgres │
-│          │    │ (detect) │    │             │    │ Processor  │    │          │
-└──────────┘    └──────────┘    └─────────────┘    └────────────┘    └────┬─────┘
-                                                                         │
-                ┌──────────┐    ┌─────────────┐    ┌────────────┐        │
-                │ B3 Dash  │◀───│ B2 API      │◀───│ REST + WS  │◀───────┘
-                │ (Next.js)│    │ (FastAPI)   │    │            │
-                └──────────┘    └─────────────┘    └────────────┘
-                                       │
-                ┌──────────┐           │
-                │ B4 Infra │◀──────────┘ (Prometheus /metrics, /health)
-                │ (Kong,   │
-                │  K8s)    │
-                └──────────┘
-```
-
 ## Getting Started
 
 ### Clone with submodules
