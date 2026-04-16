@@ -1,0 +1,6 @@
+[submodule "services/b2-data"]
+	path = services/b2-data
+	url = https://github.com/Intelligent-Traffic-Ecosystem/its-data-intelligence.git
+[submodule "services/b4-infra"]
+	path = services/b4-infra
+	url = https://github.com/Intelligent-Traffic-Ecosystem/its-infrastructure-ops.git
