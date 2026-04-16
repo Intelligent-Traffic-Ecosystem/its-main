@@ -1,0 +1,81 @@
+# Full system docker-compose — brings up all services together.
+# For individual group development, use each group's own docker-compose.yml.
+
+services:
+  # ===== Shared Infrastructure =====
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: ${KAFKA_BROKER_ID:-1}
+      KAFKA_ZOOKEEPER_CONNECT: ${KAFKA_ZOOKEEPER_CONNECT:-zookeeper:2181}
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+  postgres:
+    image: postgres:16
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-traffic}
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pass}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # ===== B1 — Device & Edge Systems =====
+  # Uncomment when B1 repo is ready:
+  # b1-detector:
+  #   build: ./services/b1-detection
+  #   depends_on:
+  #     - kafka
+
+  # ===== B2 — Data & Intelligence =====
+  b2-stream-processor:
+    build:
+      context: ./services/b2-data
+      dockerfile: docker/Dockerfile.processor
+    depends_on:
+      - kafka
+      - postgres
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_TOPIC_INPUT: ${KAFKA_TOPIC_INPUT:-traffic.events.raw}
+      POSTGRES_URL: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-pass}@postgres:5432/${POSTGRES_DB:-traffic}
+    restart: on-failure
+
+  b2-api:
+    build:
+      context: ./services/b2-data
+      dockerfile: docker/Dockerfile.api
+    depends_on:
+      - postgres
+    ports:
+      - "8000:8000"
+    environment:
+      POSTGRES_URL: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-pass}@postgres:5432/${POSTGRES_DB:-traffic}
+    restart: on-failure
+
+  # ===== B3 — Dashboard & Visualization =====
+  # Uncomment when B3 repo is ready:
+  # b3-dashboard:
+  #   build: ./services/b3-dashboard
+  #   depends_on:
+  #     - b2-api
+  #   ports:
+  #     - "3000:3000"
+
+  # ===== B4 — Platform & Monitoring =====
+  # B4 may add Kong, Prometheus, Grafana here
+
+volumes:
+  pgdata:
