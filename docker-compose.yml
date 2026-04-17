@@ -31,10 +31,16 @@ services:
       - pgdata:/var/lib/postgresql/data
 
   # ===== B1 — Device & Edge Systems =====
-  # Uncomment when B1 repo is ready:
-  # b1-detector:
-  #   build: ./services/b1-detection
-  #   depends_on: [kafka]
+  b1-detector:
+    build:
+      context: ./services/b1-detection
+      dockerfile: Dockerfile
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_TOPIC_OUTPUT: ${KAFKA_TOPIC_INPUT:-traffic.events.raw}
+    restart: on-failure
 
   # ===== B2 — Data & Intelligence =====
   b2-stream-processor:
@@ -63,16 +69,17 @@ services:
     restart: on-failure
 
   # ===== B3 — Dashboard & Visualization =====
-  # Uncomment when B3 repo is ready:
-  # b3-dashboard:
-  #   build: ./services/b3-dashboard
-  #   depends_on:
-  #     - b2-api
-  #   ports:
-  #     - "3000:3000"
-
-  # ===== B4 — Platform & Monitoring =====
-  # B4 may add Kong, Prometheus, Grafana here
+  b3-dashboard:
+    build:
+      context: ./services/b3-dashboard
+      dockerfile: Dockerfile
+    depends_on:
+      - b2-api
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_API_URL: http://localhost:8000
+    restart: on-failure
 
 volumes:
   pgdata:
