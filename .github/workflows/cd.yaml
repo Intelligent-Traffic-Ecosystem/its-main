@@ -1,4 +1,4 @@
-name: CD — GitOps Deploy
+name: CD - GitOps Deploy
 
 on:
   workflow_dispatch:
