@@ -32,6 +32,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4.2.2
         with:
+          token: ${{ secrets.ORG_SUBMODULE_TOKEN }}
           submodules: recursive
           fetch-depth: 0
 
@@ -113,6 +114,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4.2.2
         with:
+          token: ${{ secrets.ORG_SUBMODULE_TOKEN }}
           submodules: recursive
 
       - name: Check Dockerfile exists
