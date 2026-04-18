@@ -2,6 +2,8 @@
 
 AI-powered traffic monitoring system using video analytics and real-time congestion prediction.
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Intelligent-Traffic-Ecosystem_its-main&metric=alert_status&token=7278bc0fd1194987f3695225e61797a207c3fa3a)](https://sonarcloud.io/summary/new_code?id=Intelligent-Traffic-Ecosystem_its-main)
+
 ## Sub-Groups
 
 | Group | Repo | Description |
