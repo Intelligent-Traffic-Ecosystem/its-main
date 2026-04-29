@@ -64,9 +64,15 @@ jobs:
         working-directory: ${{ matrix.dir }}
         run: |
           pytest tests/ -v \
+            --ignore=tests/integration \
             --cov=. \
             --cov-report=xml:coverage.xml \
             --cov-report=term-missing
+
+      - name: Run integration tests (b2-data)
+        if: steps.check.outputs.exists == 'true' && matrix.service == 'b2-data'
+        working-directory: ${{ matrix.dir }}
+        run: pytest tests/integration/ -v --tb=short --timeout=120
 
       - name: SonarCloud Scan
         if: steps.check.outputs.exists == 'true'
