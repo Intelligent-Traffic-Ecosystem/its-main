@@ -116,6 +116,11 @@ jobs:
             dockerfile: services/b3-dashboard/Dockerfile
             image: its-dashboard
 
+          - service: mock-producer
+            context: services/b1-detection
+            dockerfile: services/b1-detection/Dockerfile.mock
+            image: its-mock-producer
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4.2.2
