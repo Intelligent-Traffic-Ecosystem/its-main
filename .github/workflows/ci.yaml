@@ -111,10 +111,10 @@ jobs:
           #   dockerfile: services/b2-data/docker/Dockerfile.api
           #   image: its-api
 
-          # - service: b3-dashboard
-          #   context: services/b3-dashboard
-          #   dockerfile: services/b3-dashboard/Dockerfile
-          #   image: its-dashboard
+          - service: b3-dashboard
+            context: services/b3-dashboard
+            dockerfile: services/b3-dashboard/Dockerfile
+            image: its-dashboard
 
           - service: mock-producer
             context: services/b1-detection
