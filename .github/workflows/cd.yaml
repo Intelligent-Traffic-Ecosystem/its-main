@@ -69,7 +69,7 @@ jobs:
 
           git add core/deployment.yaml core/service.yaml core/dashboard-backend.yaml core/dashboard-login.yaml k8s/mock-producer.yaml
 
-          git commit -m "deploy: its-ingestor, its-mock-producer → tag ${{ github.event.inputs.image_tag }}" \
+          git commit -m "deploy: its-dashboard, its-dashboard-backend, its-dashboard-login, its-mock-producer → tag ${{ github.event.inputs.image_tag }}" \
             || echo "No changes to commit — tag was already up to date"
 
           git push origin main
