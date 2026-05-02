@@ -114,19 +114,19 @@ jobs:
           # 1. The Backend Service
           - service: its-dashboard-backend
             context: services/b3-dashboard
-            dockerfile: docker/Dockerfile.backend
+            dockerfile: services/b3-dashboard/docker/Dockerfile.backend
             image: its-dashboard-backend
 
           # 2. The Login App
           - service: its-dashboard-login
             context: services/b3-dashboard
-            dockerfile: docker/Dockerfile.login
+            dockerfile: services/b3-dashboard/docker/Dockerfile.login
             image: its-dashboard-login
 
           # 3. The Main Traffic Dashboard (What ArgoCD currently tracks)
           - service: its-dashboard
             context: services/b3-dashboard
-            dockerfile: docker/Dockerfile.traffic-dashboard
+            dockerfile: services/b3-dashboard/docker/Dockerfile.traffic-dashboard
             image: its-dashboard
 
             - service: mock-producer
