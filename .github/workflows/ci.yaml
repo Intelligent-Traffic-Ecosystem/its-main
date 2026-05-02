@@ -11,7 +11,22 @@ jobs:
   test:
     name: Test & Scan (${{ matrix.service }})
     runs-on: ubuntu-latest
- 
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: pass
+          POSTGRES_DB: traffic
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     strategy:
       fail-fast: false
       matrix:
@@ -62,6 +77,8 @@ jobs:
       - name: Run pytest with coverage
         if: steps.check.outputs.exists == 'true'
         working-directory: ${{ matrix.dir }}
+        env:
+          POSTGRES_URL: postgresql://user:pass@localhost:5432/traffic
         run: |
           pytest tests/ -v \
             --ignore=tests/integration \
