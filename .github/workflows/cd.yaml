@@ -37,12 +37,19 @@ jobs:
         run: |
           echo "--- deployment.yaml BEFORE patch ---"
           cat gitops-repo/core/deployment.yaml
+          
+          # 1. Update the Main Dashboard
+          sed -i "s|image:.*its-dashboard:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-dashboard:${{ github.event.inputs.image_tag }}|g" gitops-repo/core/deployment.yaml
 
-          # This 'sed' command searches for 'its-dashboard-ui' and replaces 
-          # the entire line with your new Docker Hub image and the run number.
-          sed -i \
-            "s|image:.*its-dashboard-ui.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-dashboard:${{ github.event.inputs.image_tag }}|g" \
-            gitops-repo/core/deployment.yaml
+          # 2. Update the Backend (assuming you create a new manifest for it)
+          sed -i "s|image:.*its-dashboard-backend:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-dashboard-backend:${{ github.event.inputs.image_tag }}|g" gitops-repo/core/dashboard-backend.yaml
+
+          # 3. Update the Login App
+          sed -i "s|image:.*its-dashboard-login:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-dashboard-login:${{ github.event.inputs.image_tag }}|g" gitops-repo/core/dashboard-login.yaml
+
+          # sed -i \
+          #   "s|image:.*its-ingestor.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-ingestor:${{ github.event.inputs.image_tag }}|g" \
+          #   gitops-repo/core/deployment.yaml
 
           echo "--- deployment.yaml AFTER patch ---"
           cat gitops-repo/core/deployment.yaml
@@ -60,9 +67,9 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add core/deployment.yaml k8s/mock-producer.yaml
+          git add core/deployment.yaml core/service.yaml core/dashboard-backend.yaml core/dashboard-login.yaml k8s/mock-producer.yaml
 
-          git commit -m "deploy: its-ingestor, its-mock-producer → tag ${{ github.event.inputs.image_tag }}" \
+          git commit -m "deploy: its-dashboard, its-dashboard-backend, its-dashboard-login, its-mock-producer → tag ${{ github.event.inputs.image_tag }}" \
             || echo "No changes to commit — tag was already up to date"
 
           git push origin main
