@@ -101,15 +101,15 @@ jobs:
           #   dockerfile: services/b1-detection/Dockerfile
           #   image: its-detector
 
-            - service: b2-ingestor
-              context: services/b2-data
-              dockerfile: services/b2-data/docker/Dockerfile.processor
-              image: its-ingestor
+            # - service: b2-ingestor
+            #   context: services/b2-data
+            #   dockerfile: services/b2-data/docker/Dockerfile.processor
+            #   image: its-ingestor
 
-            - service: b2-api
-              context: services/b2-data
-              dockerfile: services/b2-data/docker/Dockerfile.api
-              image: its-api
+            # - service: b2-api
+            #   context: services/b2-data
+            #   dockerfile: services/b2-data/docker/Dockerfile.api
+            #   image: its-api
 
           # 1. The Backend Service
             - service: its-dashboard-backend
