@@ -56,6 +56,11 @@ jobs:
             "s|image:.*its-mock-producer.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-mock-producer:${{ github.event.inputs.image_tag }}|g" \
             gitops-repo/k8s/mock-producer.yaml
 
+      - name: Update backend image tags
+        run: |
+          sed -i "s|image: .*its-ingestor:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-ingestor:${{ github.event.inputs.image_tag }}|g" gitops-repo/backend/deployment.yaml
+          sed -i "s|image: .*its-api:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-api:${{ github.event.inputs.image_tag }}|g" gitops-repo/backend/deployment.yaml
+
       # ── 3. Commit and push — ArgoCD will auto-sync the cluster ──────────
       - name: Commit and push manifest update
         working-directory: gitops-repo
@@ -63,9 +68,9 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add frontend/deployment.yaml core/dashboard-backend.yaml k8s/mock-producer.yaml
+          git add frontend/deployment.yaml core/dashboard-backend.yaml k8s/mock-producer.yaml backend/deployment.yaml backend/service.yaml argocd/app-backend.yaml
 
-          git commit -m "deploy: its-dashboard, its-dashboard-backend, its-dashboard-login, its-mock-producer → tag ${{ github.event.inputs.image_tag }}" \
+          git commit -m "deploy: its-dashboard, its-dashboard-backend, its-dashboard-login, its-mock-producer, its-backend → tag ${{ github.event.inputs.image_tag }}" \
             || echo "No changes to commit — tag was already up to date"
 
           git push origin main
