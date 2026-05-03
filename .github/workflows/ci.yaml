@@ -122,12 +122,17 @@ jobs:
               context: .
               dockerfile: docker/Dockerfile.login
               image: its-dashboard-login
+              build_args: >-
+                --build-arg BACKEND_URL=https://its.csproject.org/api
 
             # 3. The Main Traffic Dashboard (What ArgoCD currently tracks)
             - service: its-dashboard
               context: .
               dockerfile: docker/Dockerfile.traffic-dashboard
               image: its-dashboard
+              build_args: >-
+                --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org/api
+                --build-arg NEXT_PUBLIC_LOGIN_APP_URL=https://its.csproject.org/login
 
             - service: mock-producer
               context: services/b1-detection
@@ -179,6 +184,7 @@ jobs:
           docker build \
             -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}:${{ github.run_number }} \
             -f ${{ matrix.dockerfile }} \
+            ${{ matrix.build_args || '' }} \
             ${{ matrix.context }}
 
       - name: Push image to Docker Hub
