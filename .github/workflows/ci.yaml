@@ -22,7 +22,7 @@ jobs:
   #
           - service: b2-data
             dir: services/b2-data
-            sonar_key: SONAR_PROJECT_KEY_B2
+            sonar_key: SONAR_PROJECT_KEY
   #
   #         - service: b3-dashboard
   #           dir: services/b3-dashboard
