@@ -7,90 +7,90 @@ on:
     branches: [main]
 
 jobs:
-#   ── Test all Python services ───────────────────────────────────────────────
-#   test:
-#     name: Test & Scan (${{ matrix.service }})
-#     runs-on: ubuntu-latest
-#  
-#     strategy:
-#       fail-fast: false
-#       matrix:
-#         include:
-# #         - service: b1-detection
-# #           dir: services/b1-detection
-# #           sonar_key: SONAR_PROJECT_KEY_B1
-# #
-# #         - service: b2-data
-# #            dir: services/b2-data
-# #            sonar_key: SONAR_PROJECT_KEY_B2
-# #
-# #         - service: b3-dashboard
-# #           dir: services/b3-dashboard
-# #           sonar_key: SONAR_PROJECT_KEY_B3
-# #
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v4.2.2
-#         with:
-#           token: ${{ secrets.ORG_SUBMODULE_TOKEN }}
-#           submodules: recursive
-#           fetch-depth: 0
-#   
-#       - name: Check tests exist
-#         id: check
-#         run: |
-#           if [ -f "${{ matrix.dir }}/requirements.txt" ] && [ -d "${{ matrix.dir }}/tests" ]; then
-#             echo "exists=true" >> $GITHUB_OUTPUT
-#           else
-#             echo "exists=false" >> $GITHUB_OUTPUT
-#             echo "No tests found for ${{ matrix.service }} — skipping"
-#           fi
-#   
-#       - name: Set up Python 3.11
-#         if: steps.check.outputs.exists == 'true'
-#         uses: actions/setup-python@v5
-#         with:
-#           python-version: "3.11"
-#   
-#       - name: Install dependencies
-#         if: steps.check.outputs.exists == 'true'
-#         working-directory: ${{ matrix.dir }}
-#         run: |
-#           pip install --upgrade pip
-#           pip install -r requirements.txt
-#   
-#       - name: Run pytest with coverage
-#         if: steps.check.outputs.exists == 'true'
-#         working-directory: ${{ matrix.dir }}
-#         run: |
-#           pytest tests/ -v \
-#             --ignore=tests/integration \
-#             --cov=. \
-#             --cov-report=xml:coverage.xml \
-#             --cov-report=term-missing
-#   
-#       - name: Run integration tests (b2-data)
-#         if: steps.check.outputs.exists == 'true' && matrix.service == 'b2-data'
-#         working-directory: ${{ matrix.dir }}
-#         run: pytest tests/integration/ -v --tb=short --timeout=120
-#   
-#       - name: SonarCloud Scan
-#         if: steps.check.outputs.exists == 'true'
-#         uses: SonarSource/sonarcloud-github-action@master
-#         env:
-#           GITHUB_TOKEN: ${{ secrets.ORG_SUBMODULE_TOKEN }}
-#           SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}
-#         with:
-#           projectBaseDir: ${{ matrix.dir }}
-#           args: >
-#             -Dsonar.projectKey=${{ secrets[matrix.sonar_key] }}
-#             -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
+  # ── Test all Python services ───────────────────────────────────────────────
+  test:
+    name: Test & Scan (${{ matrix.service }})
+    runs-on: ubuntu-latest
+ 
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+  #         - service: b1-detection
+  #           dir: services/b1-detection
+  #           sonar_key: SONAR_PROJECT_KEY_B1
+  #
+          - service: b2-data
+            dir: services/b2-data
+            sonar_key: SONAR_PROJECT_KEY_B2
+  #
+  #         - service: b3-dashboard
+  #           dir: services/b3-dashboard
+  #           sonar_key: SONAR_PROJECT_KEY_B3
+  #
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.2.2
+        with:
+          token: ${{ secrets.ORG_SUBMODULE_TOKEN }}
+          submodules: recursive
+          fetch-depth: 0
+  
+      - name: Check tests exist
+        id: check
+        run: |
+          if [ -f "${{ matrix.dir }}/requirements.txt" ] && [ -d "${{ matrix.dir }}/tests" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "No tests found for ${{ matrix.service }} — skipping"
+          fi
+  
+      - name: Set up Python 3.11
+        if: steps.check.outputs.exists == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+  
+      - name: Install dependencies
+        if: steps.check.outputs.exists == 'true'
+        working-directory: ${{ matrix.dir }}
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+  
+      - name: Run pytest with coverage
+        if: steps.check.outputs.exists == 'true'
+        working-directory: ${{ matrix.dir }}
+        run: |
+          pytest tests/ -v \
+            --ignore=tests/integration \
+            --cov=. \
+            --cov-report=xml:coverage.xml \
+            --cov-report=term-missing
+  
+      - name: Run integration tests (b2-data)
+        if: steps.check.outputs.exists == 'true' && matrix.service == 'b2-data'
+        working-directory: ${{ matrix.dir }}
+        run: pytest tests/integration/ -v --tb=short --timeout=120
+  
+      - name: SonarCloud Scan
+        if: steps.check.outputs.exists == 'true'
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.ORG_SUBMODULE_TOKEN }}
+          SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: ${{ matrix.dir }}
+          args: >
+            -Dsonar.projectKey=${{ secrets[matrix.sonar_key] }}
+            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
 
   # ── Build, push & scan all service images ─────────────────────────────────
   build:
     name: Build → Push → Scan (${{ matrix.service }})
     runs-on: ubuntu-latest
-    # needs: test
+    needs: test
 
     strategy:
       fail-fast: false
@@ -101,15 +101,15 @@ jobs:
           #   dockerfile: services/b1-detection/Dockerfile
           #   image: its-detector
 
-            # - service: b2-ingestor
-            #   context: services/b2-data
-            #   dockerfile: services/b2-data/docker/Dockerfile.processor
-            #   image: its-ingestor
+            - service: b2-ingestor
+              context: services/b2-data
+              dockerfile: services/b2-data/docker/Dockerfile.processor
+              image: its-ingestor
 
-            # - service: b2-api
-            #   context: services/b2-data
-            #   dockerfile: services/b2-data/docker/Dockerfile.api
-            #   image: its-api
+            - service: b2-api
+              context: services/b2-data
+              dockerfile: services/b2-data/docker/Dockerfile.api
+              image: its-api
 
           # 1. The Backend Service
             - service: its-dashboard-backend
