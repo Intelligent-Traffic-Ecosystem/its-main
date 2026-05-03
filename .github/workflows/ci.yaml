@@ -161,6 +161,15 @@ jobs:
           submodules: recursive
           path: '.'    
 
+      # We checkout its-main (with submodules) for b2-data Docker builds
+      - name: Checkout its-main repository (b2-data)
+        if: startsWith(matrix.service, 'b2-')
+        uses: actions/checkout@v4.2.2
+        with:
+          token: ${{ secrets.ORG_SUBMODULE_TOKEN }}
+          submodules: recursive
+          path: '.'
+
       - name: Check Dockerfile exists
         id: check
         run: |
