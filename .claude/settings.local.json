@@ -6,8 +6,7 @@
       "Bash(touch services/b3-dashboard/apps/public-app/package.json services/b3-dashboard/apps/public-app/next.config.js)",
       "Bash(touch services/b3-dashboard/backend/app.js services/b3-dashboard/backend/server.js services/b3-dashboard/backend/package.json)",
       "Bash(touch services/b3-dashboard/docker/Dockerfile.backend services/b3-dashboard/docker/Dockerfile.frontend services/b3-dashboard/docker/nginx.conf)",
-      "Bash(git submodule *)",
-      "Bash(xxd)"
+      "Bash(git submodule *)"
     ]
   }
 }
