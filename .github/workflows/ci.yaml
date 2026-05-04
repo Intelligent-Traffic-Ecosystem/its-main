@@ -123,7 +123,7 @@ jobs:
               dockerfile: docker/Dockerfile.login
               image: its-dashboard-login
               build_args: >-
-                --build-arg BACKEND_URL=https://its.csproject.org/api
+                --build-arg BACKEND_URL=https://its.csproject.org
 
             # 3. Traffic Control Dashboard (/control)
             - service: its-dashboard-control
@@ -131,7 +131,7 @@ jobs:
               dockerfile: docker/Dockerfile.traffic-dashboard
               image: its-dashboard-control
               build_args: >-
-                --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org/api
+                --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org
                 --build-arg NEXT_PUBLIC_LOGIN_APP_URL=https://its.csproject.org/login
 
             # 4. Admin Dashboard (/admin)
@@ -140,7 +140,7 @@ jobs:
               dockerfile: docker/Dockerfile.admin-dashboard
               image: its-dashboard-admin
               build_args: >-
-                --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org/api
+                --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org
                 --build-arg NEXT_PUBLIC_LOGIN_APP_URL=https://its.csproject.org/login
 
             # 5. Public App (/)
@@ -149,7 +149,7 @@ jobs:
               dockerfile: docker/Dockerfile.public-app
               image: its-dashboard-public
               build_args: >-
-                --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org/api
+                --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org
 
             - service: mock-producer
               context: services/b1-detection
