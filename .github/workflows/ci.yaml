@@ -125,14 +125,31 @@ jobs:
               build_args: >-
                 --build-arg BACKEND_URL=https://its.csproject.org/api
 
-            # 3. The Main Traffic Dashboard (What ArgoCD currently tracks)
-            - service: its-dashboard
+            # 3. Traffic Control Dashboard (/control)
+            - service: its-dashboard-control
               context: .
               dockerfile: docker/Dockerfile.traffic-dashboard
-              image: its-dashboard
+              image: its-dashboard-control
               build_args: >-
                 --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org/api
                 --build-arg NEXT_PUBLIC_LOGIN_APP_URL=https://its.csproject.org/login
+
+            # 4. Admin Dashboard (/admin)
+            - service: its-dashboard-admin
+              context: .
+              dockerfile: docker/Dockerfile.admin-dashboard
+              image: its-dashboard-admin
+              build_args: >-
+                --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org/api
+                --build-arg NEXT_PUBLIC_LOGIN_APP_URL=https://its.csproject.org/login
+
+            # 5. Public App (/)
+            - service: its-dashboard-public
+              context: .
+              dockerfile: docker/Dockerfile.public-app
+              image: its-dashboard-public
+              build_args: >-
+                --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org/api
 
             - service: mock-producer
               context: services/b1-detection

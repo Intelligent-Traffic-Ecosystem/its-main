@@ -38,13 +38,19 @@ jobs:
           echo "--- frontend/deployment.yaml BEFORE patch ---"
           cat gitops-repo/frontend/deployment.yaml
 
-          # 1. Update the Main Dashboard (tracked by ArgoCD app-frontend → frontend/)
-          sed -i "s|image: .*its-dashboard:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-dashboard:${{ github.event.inputs.image_tag }}|g" gitops-repo/frontend/deployment.yaml
+          # 1. Traffic Control Dashboard
+          sed -i "s|image: .*its-dashboard-control:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-dashboard-control:${{ github.event.inputs.image_tag }}|g" gitops-repo/frontend/deployment.yaml
 
-          # 2. Update the Login App (same file)
+          # 2. Admin Dashboard
+          sed -i "s|image: .*its-dashboard-admin:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-dashboard-admin:${{ github.event.inputs.image_tag }}|g" gitops-repo/frontend/deployment.yaml
+
+          # 3. Public App
+          sed -i "s|image: .*its-dashboard-public:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-dashboard-public:${{ github.event.inputs.image_tag }}|g" gitops-repo/frontend/deployment.yaml
+
+          # 4. Login App
           sed -i "s|image: .*its-dashboard-login:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-dashboard-login:${{ github.event.inputs.image_tag }}|g" gitops-repo/frontend/deployment.yaml
 
-          # 3. Update the Backend (tracked by ArgoCD app-core → core/)
+          # 5. Backend (tracked by ArgoCD app-core → core/)
           sed -i "s|image: .*its-dashboard-backend:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-dashboard-backend:${{ github.event.inputs.image_tag }}|g" gitops-repo/core/dashboard-backend.yaml
 
           echo "--- frontend/deployment.yaml AFTER patch ---"
@@ -70,7 +76,7 @@ jobs:
 
           git add frontend/deployment.yaml core/dashboard-backend.yaml k8s/mock-producer.yaml backend/deployment.yaml backend/service.yaml argocd/app-backend.yaml
 
-          git commit -m "deploy: its-dashboard, its-dashboard-backend, its-dashboard-login, its-mock-producer, its-backend → tag ${{ github.event.inputs.image_tag }}" \
+          git commit -m "deploy: its-dashboard-control, its-dashboard-admin, its-dashboard-public, its-dashboard-login, its-dashboard-backend, its-mock-producer, its-backend → tag ${{ github.event.inputs.image_tag }}" \
             || echo "No changes to commit — tag was already up to date"
 
           git push origin main
