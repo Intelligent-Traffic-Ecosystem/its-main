@@ -105,50 +105,10 @@ jobs:
             dockerfile: services/b2-data/docker/Dockerfile.api
             image: its-api
 
-          # 1. The Backend Service
-            - service: its-dashboard-backend
-              context: .
-              dockerfile: docker/Dockerfile.backend
-              image: its-dashboard-backend
-
-            # 2. The Login App
-            - service: its-dashboard-login
-              context: .
-              dockerfile: docker/Dockerfile.login
-              image: its-dashboard-login
-              build_args: >-
-                --build-arg BACKEND_URL=https://its.csproject.org
-
-            # 3. Traffic Control Dashboard (/control)
-            - service: its-dashboard-control
-              context: .
-              dockerfile: docker/Dockerfile.traffic-dashboard
-              image: its-dashboard-control
-              build_args: >-
-                --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org
-                --build-arg NEXT_PUBLIC_LOGIN_APP_URL=https://its.csproject.org/login
-
-            # 4. Admin Dashboard (/admin)
-            - service: its-dashboard-admin
-              context: .
-              dockerfile: docker/Dockerfile.admin-dashboard
-              image: its-dashboard-admin
-              build_args: >-
-                --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org
-                --build-arg NEXT_PUBLIC_LOGIN_APP_URL=https://its.csproject.org/login
-
-            # 5. Public App (/)
-            - service: its-dashboard-public
-              context: .
-              dockerfile: docker/Dockerfile.public-app
-              image: its-dashboard-public
-              build_args: >-
-                --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org
-
-            - service: mock-producer
-              context: services/b1-detection
-              dockerfile: services/b1-detection/Dockerfile.mock
-              image: its-mock-producer
+          - service: b3-dashboard
+            context: services/b3-dashboard
+            dockerfile: services/b3-dashboard/Dockerfile
+            image: its-dashboard
 
     steps:
       - name: Checkout repository
