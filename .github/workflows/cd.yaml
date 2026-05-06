@@ -22,17 +22,50 @@ jobs:
           path: gitops-repo
 
       # ── 2. Patch the deployment manifest with the new image tag ──────────
-      - name: Update image tag in deployment manifest
+      # - name: Update image tag in deployment manifest
+      #   run: |
+      #     echo "--- deployment.yaml BEFORE patch ---"
+      #     cat gitops-repo/core/deployment.yaml
+
+      #     sed -i \
+      #       "s|image:.*its-ingestor.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-ingestor:${{ github.event.inputs.image_tag }}|g" \
+      #       gitops-repo/core/deployment.yaml
+
+      #     echo "--- deployment.yaml AFTER patch ---"
+      #     cat gitops-repo/core/deployment.yaml
+      - name: Update dashboard image tag
         run: |
-          echo "--- deployment.yaml BEFORE patch ---"
-          cat gitops-repo/core/deployment.yaml
+          echo "--- frontend/deployment.yaml BEFORE patch ---"
+          cat gitops-repo/frontend/deployment.yaml
 
+          # 1. Traffic Control Dashboard
+          sed -i "s|image: .*its-dashboard-control:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-dashboard-control:${{ github.event.inputs.image_tag }}|g" gitops-repo/frontend/deployment.yaml
+
+          # 2. Admin Dashboard
+          sed -i "s|image: .*its-dashboard-admin:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-dashboard-admin:${{ github.event.inputs.image_tag }}|g" gitops-repo/frontend/deployment.yaml
+
+          # 3. Public App
+          sed -i "s|image: .*its-dashboard-public:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-dashboard-public:${{ github.event.inputs.image_tag }}|g" gitops-repo/frontend/deployment.yaml
+
+          # 4. Login App
+          sed -i "s|image: .*its-dashboard-login:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-dashboard-login:${{ github.event.inputs.image_tag }}|g" gitops-repo/frontend/deployment.yaml
+
+          # 5. Backend (tracked by ArgoCD app-core → core/)
+          sed -i "s|image: .*its-dashboard-backend:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-dashboard-backend:${{ github.event.inputs.image_tag }}|g" gitops-repo/core/dashboard-backend.yaml
+
+          echo "--- frontend/deployment.yaml AFTER patch ---"
+          cat gitops-repo/frontend/deployment.yaml
+
+      - name: Update image tag in mock-producer manifest
+        run: |
           sed -i \
-            "s|image:.*its-ingestor.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-ingestor:${{ github.event.inputs.image_tag }}|g" \
-            gitops-repo/core/deployment.yaml
+            "s|image:.*its-mock-producer.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-mock-producer:${{ github.event.inputs.image_tag }}|g" \
+            gitops-repo/k8s/mock-producer.yaml
 
-          echo "--- deployment.yaml AFTER patch ---"
-          cat gitops-repo/core/deployment.yaml
+      - name: Update backend image tags
+        run: |
+          sed -i "s|image: .*its-ingestor:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-ingestor:${{ github.event.inputs.image_tag }}|g" gitops-repo/backend/deployment.yaml
+          sed -i "s|image: .*its-api:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/its-api:${{ github.event.inputs.image_tag }}|g" gitops-repo/backend/deployment.yaml
 
       # ── 3. Commit and push — ArgoCD will auto-sync the cluster ──────────
       - name: Commit and push manifest update
@@ -41,9 +74,9 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add core/deployment.yaml
+          git add frontend/deployment.yaml core/dashboard-backend.yaml k8s/mock-producer.yaml backend/deployment.yaml backend/service.yaml argocd/app-backend.yaml
 
-          git commit -m "deploy: its-ingestor → tag ${{ github.event.inputs.image_tag }}" \
+          git commit -m "deploy: its-dashboard-control, its-dashboard-admin, its-dashboard-public, its-dashboard-login, its-dashboard-backend, its-mock-producer, its-backend → tag ${{ github.event.inputs.image_tag }}" \
             || echo "No changes to commit — tag was already up to date"
 
           git push origin main

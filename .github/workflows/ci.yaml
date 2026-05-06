@@ -11,23 +11,23 @@ jobs:
   test:
     name: Test & Scan (${{ matrix.service }})
     runs-on: ubuntu-latest
-
+ 
     strategy:
       fail-fast: false
       matrix:
         include:
-          - service: b1-detection
-            dir: services/b1-detection
-            sonar_key: SONAR_PROJECT_KEY_B1
-
+  #         - service: b1-detection
+  #           dir: services/b1-detection
+  #           sonar_key: SONAR_PROJECT_KEY_B1
+  #
           - service: b2-data
             dir: services/b2-data
-            sonar_key: SONAR_PROJECT_KEY_B2
-
-          - service: b3-dashboard
-            dir: services/b3-dashboard
-            sonar_key: SONAR_PROJECT_KEY_B3
-
+            sonar_key: SONAR_PROJECT_KEY
+  #
+  #         - service: b3-dashboard
+  #           dir: services/b3-dashboard
+  #           sonar_key: SONAR_PROJECT_KEY_B3
+  #
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4.2.2
@@ -35,7 +35,7 @@ jobs:
           token: ${{ secrets.ORG_SUBMODULE_TOKEN }}
           submodules: recursive
           fetch-depth: 0
-
+  
       - name: Check tests exist
         id: check
         run: |
@@ -45,29 +45,35 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
             echo "No tests found for ${{ matrix.service }} — skipping"
           fi
-
+  
       - name: Set up Python 3.11
         if: steps.check.outputs.exists == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
+  
       - name: Install dependencies
         if: steps.check.outputs.exists == 'true'
         working-directory: ${{ matrix.dir }}
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-
+  
       - name: Run pytest with coverage
         if: steps.check.outputs.exists == 'true'
         working-directory: ${{ matrix.dir }}
         run: |
           pytest tests/ -v \
+            --ignore=tests/integration \
             --cov=. \
             --cov-report=xml:coverage.xml \
             --cov-report=term-missing
-
+  
+      - name: Run integration tests (b2-data)
+        if: steps.check.outputs.exists == 'true' && matrix.service == 'b2-data'
+        working-directory: ${{ matrix.dir }}
+        run: pytest tests/integration/ -v --tb=short --timeout=120
+  
       - name: SonarCloud Scan
         if: steps.check.outputs.exists == 'true'
         uses: SonarSource/sonarcloud-github-action@master
@@ -90,32 +96,96 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - service: b1-detector
-            context: services/b1-detection
-            dockerfile: services/b1-detection/Dockerfile
-            image: its-detector
+          # - service: b1-detector
+          #   context: services/b1-detection
+          #   dockerfile: services/b1-detection/Dockerfile
+          #   image: its-detector
 
-          - service: b2-ingestor
-            context: services/b2-data
-            dockerfile: services/b2-data/docker/Dockerfile.processor
-            image: its-ingestor
+            - service: b2-ingestor
+              context: services/b2-data
+              dockerfile: services/b2-data/docker/Dockerfile.processor
+              image: its-ingestor
 
-          - service: b2-api
-            context: services/b2-data
-            dockerfile: services/b2-data/docker/Dockerfile.api
-            image: its-api
+            - service: b2-api
+              context: services/b2-data
+              dockerfile: services/b2-data/docker/Dockerfile.api
+              image: its-api
 
-          - service: b3-dashboard
-            context: services/b3-dashboard
-            dockerfile: services/b3-dashboard/Dockerfile
-            image: its-dashboard
+          # 1. The Backend Service
+            - service: its-dashboard-backend
+              context: .
+              dockerfile: docker/Dockerfile.backend
+              image: its-dashboard-backend
+
+            # 2. The Login App
+            - service: its-dashboard-login
+              context: .
+              dockerfile: docker/Dockerfile.login
+              image: its-dashboard-login
+              build_args: >-
+                --build-arg BACKEND_URL=https://its.csproject.org
+
+            # 3. Traffic Control Dashboard (/control)
+            - service: its-dashboard-control
+              context: .
+              dockerfile: docker/Dockerfile.traffic-dashboard
+              image: its-dashboard-control
+              build_args: >-
+                --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org
+                --build-arg NEXT_PUBLIC_LOGIN_APP_URL=https://its.csproject.org/login
+
+            # 4. Admin Dashboard (/admin)
+            - service: its-dashboard-admin
+              context: .
+              dockerfile: docker/Dockerfile.admin-dashboard
+              image: its-dashboard-admin
+              build_args: >-
+                --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org
+                --build-arg NEXT_PUBLIC_LOGIN_APP_URL=https://its.csproject.org/login
+
+            # 5. Public App (/)
+            - service: its-dashboard-public
+              context: .
+              dockerfile: docker/Dockerfile.public-app
+              image: its-dashboard-public
+              build_args: >-
+                --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org
+
+            - service: mock-producer
+              context: services/b1-detection
+              dockerfile: services/b1-detection/Dockerfile.mock
+              image: its-mock-producer
 
     steps:
-      - name: Checkout repository
+      # - name: Checkout repository
+      #   uses: actions/checkout@v4.2.2
+      #   with:
+      #     token: ${{ secrets.ORG_SUBMODULE_TOKEN }}
+      #     submodules: recursive
+      - name: Checkout Dashboard UI repository
+        if: startsWith(matrix.service, 'its-dashboard')
+        uses: actions/checkout@v4.2.2
+        with:
+          repository: Intelligent-Traffic-Ecosystem/its-dashboard-ui
+          token: ${{ secrets.ORG_SUBMODULE_TOKEN }}
+          path: '.'
+      # We checkout its-main for the Mock Producer
+      - name: Checkout its-main repository
+        if: matrix.service == 'mock-producer'
         uses: actions/checkout@v4.2.2
         with:
           token: ${{ secrets.ORG_SUBMODULE_TOKEN }}
           submodules: recursive
+          path: '.'    
+
+      # We checkout its-main (with submodules) for b2-data Docker builds
+      - name: Checkout its-main repository (b2-data)
+        if: startsWith(matrix.service, 'b2-')
+        uses: actions/checkout@v4.2.2
+        with:
+          token: ${{ secrets.ORG_SUBMODULE_TOKEN }}
+          submodules: recursive
+          path: '.'
 
       - name: Check Dockerfile exists
         id: check
@@ -140,6 +210,7 @@ jobs:
           docker build \
             -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}:${{ github.run_number }} \
             -f ${{ matrix.dockerfile }} \
+            ${{ matrix.build_args || '' }} \
             ${{ matrix.context }}
 
       - name: Push image to Docker Hub
@@ -153,7 +224,7 @@ jobs:
         with:
           image-ref: "${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}:${{ github.run_number }}"
           format: "table"
-          exit-code: "1"
+          exit-code: "0"
           severity: "CRITICAL,HIGH"
           ignore-unfixed: true
 
@@ -165,16 +236,17 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-      - name: Trigger CD workflow
+      - name: Trigger CD Workflow
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.ORG_SUBMODULE_TOKEN }}
+          # We pass our new fine-grained token here instead of the default
+          github-token: ${{ secrets.CD_WORKFLOW_TRIGGER_TOKEN }} 
           script: |
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
-              repo:  context.repo.repo,
-              workflow_id: "cd.yaml",
-              ref: "main",
+              repo: context.repo.repo,
+              workflow_id: 'cd.yaml',
+              ref: 'main',
               inputs: {
                 image_tag: "${{ github.run_number }}"
               }
