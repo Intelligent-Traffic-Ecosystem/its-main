@@ -1,4 +1,4 @@
-name: CI -  Test, Build, Scan, and Trigger CD
+name: CI - Test, Build, Scan, and Trigger CD
 
 on:
   push:
@@ -7,61 +7,126 @@ on:
     branches: [main]
 
 jobs:
-  # ── Test all Python services ───────────────────────────────────────────────
-  test:
-    name: Test & Scan (${{ matrix.service }})
+  # ── Build, test, push & scan all service images ─────────────────────────────
+  build:
+    name: Build → Push → Scan (${{ matrix.service }})
     runs-on: ubuntu-latest
- 
+
     strategy:
       fail-fast: false
       matrix:
         include:
-  #         - service: b1-detection
-  #           dir: services/b1-detection
-  #           sonar_key: SONAR_PROJECT_KEY_B1
-  #
-          - service: b2-data
-            dir: services/b2-data
+          # ─── B2 Data Services ───────────────────────────────────────────
+          - service: b2-ingestor
+            context: services/b2-data
+            dockerfile: services/b2-data/docker/Dockerfile.processor
+            image: its-ingestor
+            repo: main
+            test_dir: services/b2-data
             sonar_key: SONAR_PROJECT_KEY
-  #
-  #         - service: b3-dashboard
-  #           dir: services/b3-dashboard
-  #           sonar_key: SONAR_PROJECT_KEY_B3
-  #
+
+          - service: b2-api
+            context: services/b2-data
+            dockerfile: services/b2-data/docker/Dockerfile.api
+            image: its-api
+            repo: main
+
+          # ─── B3 Dashboard Services ──────────────────────────────────────
+          - service: its-dashboard-backend
+            context: .
+            dockerfile: docker/Dockerfile.backend
+            image: its-dashboard-backend
+            repo: dashboard
+
+          - service: its-dashboard-login
+            context: .
+            dockerfile: docker/Dockerfile.login
+            image: its-dashboard-login
+            repo: dashboard
+            build_args: >-
+              --build-arg BACKEND_URL=https://its.csproject.org
+              --build-arg NEXT_PUBLIC_AUTH_LOGIN_URL=https://its.csproject.org/login/api/auth/login
+
+          - service: its-dashboard-control
+            context: .
+            dockerfile: docker/Dockerfile.traffic-dashboard
+            image: its-dashboard-control
+            repo: dashboard
+            build_args: >-
+              --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org
+              --build-arg NEXT_PUBLIC_LOGIN_APP_URL=https://its.csproject.org/login
+              --build-arg NEXT_PUBLIC_AUTH_LOGIN_URL=https://its.csproject.org/login
+              --build-arg NEXT_PUBLIC_TRAFFIC_DASHBOARD_HOME_PATH=/dashboard
+
+          - service: its-dashboard-admin
+            context: .
+            dockerfile: docker/Dockerfile.admin-dashboard
+            image: its-dashboard-admin
+            repo: dashboard
+            build_args: >-
+              --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org
+              --build-arg NEXT_PUBLIC_LOGIN_APP_URL=https://its.csproject.org/login
+              --build-arg NEXT_PUBLIC_AUTH_LOGIN_URL=https://its.csproject.org/login
+
+          - service: its-dashboard-public
+            context: .
+            dockerfile: docker/Dockerfile.public-app
+            image: its-dashboard-public
+            repo: dashboard
+            build_args: >-
+              --build-arg NEXT_PUBLIC_PUBLIC_APP_HOME_PATH=/dashboard
+
+          # ─── B1 Mock Producer ───────────────────────────────────────────
+          - service: mock-producer
+            context: services/b1-detection
+            dockerfile: services/b1-detection/Dockerfile.mock
+            image: its-mock-producer
+            repo: main
+
     steps:
-      - name: Checkout repository
+      # ── Checkout ────────────────────────────────────────────────────────
+      - name: Checkout Dashboard UI repository
+        if: matrix.repo == 'dashboard'
+        uses: actions/checkout@v4.2.2
+        with:
+          repository: Intelligent-Traffic-Ecosystem/its-dashboard-ui
+          token: ${{ secrets.ORG_SUBMODULE_TOKEN }}
+          path: '.'
+
+      - name: Checkout its-main repository
+        if: matrix.repo == 'main'
         uses: actions/checkout@v4.2.2
         with:
           token: ${{ secrets.ORG_SUBMODULE_TOKEN }}
           submodules: recursive
-          fetch-depth: 0
-  
+          path: '.'
+
+      # ── Test (only for services that have tests) ────────────────────────
       - name: Check tests exist
-        id: check
+        id: check-tests
         run: |
-          if [ -f "${{ matrix.dir }}/requirements.txt" ] && [ -d "${{ matrix.dir }}/tests" ]; then
+          if [ -n "${{ matrix.test_dir }}" ] && [ -f "${{ matrix.test_dir }}/requirements.txt" ] && [ -d "${{ matrix.test_dir }}/tests" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "No tests found for ${{ matrix.service }} — skipping"
           fi
-  
+
       - name: Set up Python 3.11
-        if: steps.check.outputs.exists == 'true'
+        if: steps.check-tests.outputs.exists == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-  
+
       - name: Install dependencies
-        if: steps.check.outputs.exists == 'true'
-        working-directory: ${{ matrix.dir }}
+        if: steps.check-tests.outputs.exists == 'true'
+        working-directory: ${{ matrix.test_dir }}
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-  
+
       - name: Run pytest with coverage
-        if: steps.check.outputs.exists == 'true'
-        working-directory: ${{ matrix.dir }}
+        if: steps.check-tests.outputs.exists == 'true'
+        working-directory: ${{ matrix.test_dir }}
         run: |
           pytest tests/ -v \
             --ignore=tests/integration \
@@ -69,125 +134,25 @@ jobs:
             --cov=. \
             --cov-report=xml:coverage.xml \
             --cov-report=term-missing
-  
-      - name: Run integration tests (b2-data)
-        if: steps.check.outputs.exists == 'true' && matrix.service == 'b2-data'
-        working-directory: ${{ matrix.dir }}
+
+      - name: Run integration tests
+        if: steps.check-tests.outputs.exists == 'true'
+        working-directory: ${{ matrix.test_dir }}
         run: pytest tests/integration/ -v --tb=short --timeout=120
-  
+
       - name: SonarCloud Scan
-        if: steps.check.outputs.exists == 'true'
+        if: steps.check-tests.outputs.exists == 'true' && matrix.sonar_key
         uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.ORG_SUBMODULE_TOKEN }}
           SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}
         with:
-          projectBaseDir: ${{ matrix.dir }}
+          projectBaseDir: ${{ matrix.test_dir }}
           args: >
             -Dsonar.projectKey=${{ secrets[matrix.sonar_key] }}
             -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
 
-  # ── Build, push & scan all service images ─────────────────────────────────
-  build:
-    name: Build → Push → Scan (${{ matrix.service }})
-    runs-on: ubuntu-latest
-    needs: test
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # - service: b1-detector
-          #   context: services/b1-detection
-          #   dockerfile: services/b1-detection/Dockerfile
-          #   image: its-detector
-
-            - service: b2-ingestor
-              context: services/b2-data
-              dockerfile: services/b2-data/docker/Dockerfile.processor
-              image: its-ingestor
-
-            - service: b2-api
-              context: services/b2-data
-              dockerfile: services/b2-data/docker/Dockerfile.api
-              image: its-api
-
-          # 1. The Backend Service
-            - service: its-dashboard-backend
-              context: .
-              dockerfile: docker/Dockerfile.backend
-              image: its-dashboard-backend
-
-            # 2. The Login App
-            - service: its-dashboard-login
-              context: .
-              dockerfile: docker/Dockerfile.login
-              image: its-dashboard-login
-              build_args: >-
-                --build-arg BACKEND_URL=https://its.csproject.org
-
-            # 3. Traffic Control Dashboard (/control)
-            - service: its-dashboard-control
-              context: .
-              dockerfile: docker/Dockerfile.traffic-dashboard
-              image: its-dashboard-control
-              build_args: >-
-                --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org
-                --build-arg NEXT_PUBLIC_LOGIN_APP_URL=https://its.csproject.org/login
-
-            # 4. Admin Dashboard (/admin)
-            - service: its-dashboard-admin
-              context: .
-              dockerfile: docker/Dockerfile.admin-dashboard
-              image: its-dashboard-admin
-              build_args: >-
-                --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org
-                --build-arg NEXT_PUBLIC_LOGIN_APP_URL=https://its.csproject.org/login
-
-            # 5. Public App (/)
-            - service: its-dashboard-public
-              context: .
-              dockerfile: docker/Dockerfile.public-app
-              image: its-dashboard-public
-              build_args: >-
-                --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org
-
-            - service: mock-producer
-              context: services/b1-detection
-              dockerfile: services/b1-detection/Dockerfile.mock
-              image: its-mock-producer
-
-    steps:
-      # - name: Checkout repository
-      #   uses: actions/checkout@v4.2.2
-      #   with:
-      #     token: ${{ secrets.ORG_SUBMODULE_TOKEN }}
-      #     submodules: recursive
-      - name: Checkout Dashboard UI repository
-        if: startsWith(matrix.service, 'its-dashboard')
-        uses: actions/checkout@v4.2.2
-        with:
-          repository: Intelligent-Traffic-Ecosystem/its-dashboard-ui
-          token: ${{ secrets.ORG_SUBMODULE_TOKEN }}
-          path: '.'
-      # We checkout its-main for the Mock Producer
-      - name: Checkout its-main repository
-        if: matrix.service == 'mock-producer'
-        uses: actions/checkout@v4.2.2
-        with:
-          token: ${{ secrets.ORG_SUBMODULE_TOKEN }}
-          submodules: recursive
-          path: '.'    
-
-      # We checkout its-main (with submodules) for b2-data Docker builds
-      - name: Checkout its-main repository (b2-data)
-        if: startsWith(matrix.service, 'b2-')
-        uses: actions/checkout@v4.2.2
-        with:
-          token: ${{ secrets.ORG_SUBMODULE_TOKEN }}
-          submodules: recursive
-          path: '.'
-
+      # ── Build & Push ────────────────────────────────────────────────────
       - name: Check Dockerfile exists
         id: check
         run: |
@@ -219,6 +184,7 @@ jobs:
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}:${{ github.run_number }}
 
+      # ── Security Scan ───────────────────────────────────────────────────
       - name: Scan image with Trivy
         if: steps.check.outputs.exists == 'true'
         uses: aquasecurity/trivy-action@master
@@ -240,8 +206,7 @@ jobs:
       - name: Trigger CD Workflow
         uses: actions/github-script@v7
         with:
-          # We pass our new fine-grained token here instead of the default
-          github-token: ${{ secrets.CD_WORKFLOW_TRIGGER_TOKEN }} 
+          github-token: ${{ secrets.CD_WORKFLOW_TRIGGER_TOKEN }}
           script: |
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
