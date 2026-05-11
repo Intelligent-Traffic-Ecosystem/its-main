@@ -124,7 +124,6 @@ jobs:
             repo: dashboard
             build_args: >-
               --build-arg NEXT_PUBLIC_PUBLIC_APP_HOME_PATH=/dashboard
-              --build-arg NEXT_PUBLIC_MAPBOX_TOKEN=${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
 
           # ─── B1 Mock Producer ───────────────────────────────────────────
           - service: mock-producer
@@ -222,11 +221,18 @@ jobs:
 
       - name: Build Docker image
         if: steps.check.outputs.exists == 'true'
+        env:
+          NEXT_PUBLIC_MAPBOX_TOKEN: ${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
         run: |
+          MAPBOX_ARG=""
+          if [ "${{ matrix.service }}" = "its-dashboard-public" ]; then
+            MAPBOX_ARG="--build-arg NEXT_PUBLIC_MAPBOX_TOKEN=${NEXT_PUBLIC_MAPBOX_TOKEN}"
+          fi
           docker build \
             -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}:${{ github.run_number }} \
             -f ${{ matrix.dockerfile }} \
             ${{ matrix.build_args || '' }} \
+            ${MAPBOX_ARG} \
             ${{ matrix.context }}
 
       - name: Push image to Docker Hub
