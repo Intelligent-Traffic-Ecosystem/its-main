@@ -124,6 +124,7 @@ jobs:
             repo: dashboard
             build_args: >-
               --build-arg NEXT_PUBLIC_PUBLIC_APP_HOME_PATH=/dashboard
+              --build-arg NEXT_PUBLIC_MAPBOX_TOKEN=${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
 
           # ─── B1 Mock Producer ───────────────────────────────────────────
           - service: mock-producer
