@@ -227,7 +227,7 @@ jobs:
           NEXT_PUBLIC_GOOGLE_MAPS_ID: ${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_ID }}
         run: |
           MAPBOX_ARG=""
-          if [ "${{ matrix.service }}" = "its-dashboard-public" ]; then
+          if [ "${{ matrix.service }}" = "its-dashboard-public" ] || [ "${{ matrix.service }}" = "its-dashboard-admin" ]; then
             MAPBOX_ARG="--build-arg NEXT_PUBLIC_MAPBOX_TOKEN=${NEXT_PUBLIC_MAPBOX_TOKEN}"
           fi
           GMAPS_ARGS=""
