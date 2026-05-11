@@ -223,16 +223,23 @@ jobs:
         if: steps.check.outputs.exists == 'true'
         env:
           NEXT_PUBLIC_MAPBOX_TOKEN: ${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
+          NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
+          NEXT_PUBLIC_GOOGLE_MAPS_ID: ${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_ID }}
         run: |
           MAPBOX_ARG=""
           if [ "${{ matrix.service }}" = "its-dashboard-public" ]; then
             MAPBOX_ARG="--build-arg NEXT_PUBLIC_MAPBOX_TOKEN=${NEXT_PUBLIC_MAPBOX_TOKEN}"
+          fi
+          GMAPS_ARGS=""
+          if [ "${{ matrix.service }}" = "its-dashboard-control" ]; then
+            GMAPS_ARGS="--build-arg NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY} --build-arg NEXT_PUBLIC_GOOGLE_MAPS_ID=${NEXT_PUBLIC_GOOGLE_MAPS_ID}"
           fi
           docker build \
             -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}:${{ github.run_number }} \
             -f ${{ matrix.dockerfile }} \
             ${{ matrix.build_args || '' }} \
             ${MAPBOX_ARG} \
+            ${GMAPS_ARGS} \
             ${{ matrix.context }}
 
       - name: Push image to Docker Hub
