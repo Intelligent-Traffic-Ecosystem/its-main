@@ -132,6 +132,13 @@ jobs:
             image: its-mock-producer
             repo: main
 
+          # ─── B3 Mock B2 Server (fallback upstream for dashboard-backend) ─
+          - service: mock-b2-server
+            context: services/b3-dashboard
+            dockerfile: services/b3-dashboard/docker/Dockerfile.mock-b2
+            image: its-mock-b2-server
+            repo: main
+
     steps:
       # ── Checkout ────────────────────────────────────────────────────────
       - name: Checkout Dashboard UI repository
