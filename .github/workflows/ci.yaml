@@ -82,25 +82,25 @@ jobs:
 
           # ─── B3 Dashboard Services ──────────────────────────────────────
           - service: its-dashboard-backend
-            context: .
-            dockerfile: docker/Dockerfile.backend
+            context: services/b3-dashboard
+            dockerfile: services/b3-dashboard/docker/Dockerfile.backend
             image: its-dashboard-backend
-            repo: dashboard
+            repo: main
 
           - service: its-dashboard-login
-            context: .
-            dockerfile: docker/Dockerfile.login
+            context: services/b3-dashboard
+            dockerfile: services/b3-dashboard/docker/Dockerfile.login
             image: its-dashboard-login
-            repo: dashboard
+            repo: main
             build_args: >-
               --build-arg BACKEND_URL=https://its.csproject.org
               --build-arg NEXT_PUBLIC_AUTH_LOGIN_URL=https://its.csproject.org/login/api/auth/login
 
           - service: its-dashboard-control
-            context: .
-            dockerfile: docker/Dockerfile.traffic-dashboard
+            context: services/b3-dashboard
+            dockerfile: services/b3-dashboard/docker/Dockerfile.traffic-dashboard
             image: its-dashboard-control
-            repo: dashboard
+            repo: main
             build_args: >-
               --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org
               --build-arg NEXT_PUBLIC_LOGIN_APP_URL=https://its.csproject.org/login
@@ -108,20 +108,20 @@ jobs:
               --build-arg NEXT_PUBLIC_TRAFFIC_DASHBOARD_HOME_PATH=/dashboard
 
           - service: its-dashboard-admin
-            context: .
-            dockerfile: docker/Dockerfile.admin-dashboard
+            context: services/b3-dashboard
+            dockerfile: services/b3-dashboard/docker/Dockerfile.admin-dashboard
             image: its-dashboard-admin
-            repo: dashboard
+            repo: main
             build_args: >-
               --build-arg NEXT_PUBLIC_BACKEND_URL=https://its.csproject.org
               --build-arg NEXT_PUBLIC_LOGIN_APP_URL=https://its.csproject.org/login
               --build-arg NEXT_PUBLIC_AUTH_LOGIN_URL=https://its.csproject.org/login
 
           - service: its-dashboard-public
-            context: .
-            dockerfile: docker/Dockerfile.public-app
+            context: services/b3-dashboard
+            dockerfile: services/b3-dashboard/docker/Dockerfile.public-app
             image: its-dashboard-public
-            repo: dashboard
+            repo: main
             build_args: >-
               --build-arg NEXT_PUBLIC_PUBLIC_APP_HOME_PATH=/dashboard
 
